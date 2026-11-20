@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Sign in to Oasis",
-        "description": "Oasis only signs in with Google, and it sends the sign-in back to the Oasis app, so it takes one extra step.\n\n1. On a computer, open Chrome, open DevTools (View › Developer › Developer Tools), Network tab, tick **Preserve log**.\n2. In that tab, open [Oasis's sign-in]({url}) and sign in with Google.\n3. The page stops without going anywhere. In the Network list, filter for `code=`; copy the address that starts with `com.mixtiles.oasis://success?code=` (or the request's **Location** header).\n4. Paste it here within a few minutes.\n\nYou can also paste a refresh token kept from an earlier sign-in.",
+        "description": "This works with an Oasis account you sign in to with Google (other Oasis sign-ins aren't supported yet). Google sends the sign-in back to the Oasis app, so it takes one extra step.\n\n1. On a computer, open Chrome, open DevTools (View › Developer › Developer Tools), Network tab, tick **Preserve log**.\n2. In that tab, open [Oasis's sign-in]({url}) and sign in with Google.\n3. The page stops without going anywhere. In the Network list, filter for `code=`; copy the address that starts with `com.mixtiles.oasis://success?code=` (or the request's **Location** header).\n4. Paste it here within a few minutes.\n\nYou can also paste a refresh token kept from an earlier sign-in.",
         "data": {
           "sign_in": "Sign-in address, code or refresh token"
         }

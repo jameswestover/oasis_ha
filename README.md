@@ -25,8 +25,12 @@ Then Settings › Devices & services › Add integration › **Oasis lights**.
 
 ## Signing in
 
-Oasis signs in only with Google, and its sign-in returns to the Oasis app's own
-address (`com.mixtiles.oasis://success?code=…`), which a browser can't open. So:
+The Oasis app offers more than one way to sign in. **Only Google sign-in works
+here so far.** If your Oasis account uses another way, this integration can't
+sign in to it yet (contributions welcome).
+
+Oasis's Google sign-in returns to the Oasis app's own address
+(`com.mixtiles.oasis://success?code=…`), which a browser can't open. So:
 
 1. On a computer, in Chrome, open DevTools (Network tab) and tick **Preserve log**.
 2. In that tab, open the sign-in link the setup form shows and sign in with Google.
