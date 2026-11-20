@@ -1,0 +1,13 @@
+{
+  "domain": "oasis",
+  "name": "Oasis lights",
+  "codeowners": ["@jameswestover"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/jameswestover/oasis_ha",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/jameswestover/oasis_ha/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to Oasis",
+        "description": "Oasis only signs in with Google, and it sends the sign-in back to the Oasis app, so it takes one extra step.\n\n1. On a computer, open Chrome, open DevTools (View › Developer › Developer Tools), Network tab, tick **Preserve log**.\n2. In that tab, open [Oasis's sign-in]({url}) and sign in with Google.\n3. The page stops without going anywhere. In the Network list, filter for `code=`; copy the address that starts with `com.mixtiles.oasis://success?code=` (or the request's **Location** header).\n4. Paste it here within a few minutes.\n\nYou can also paste a refresh token kept from an earlier sign-in.",
+        "data": {
+          "sign_in": "Sign-in address, code or refresh token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to Oasis again",
+        "description": "Oasis's sign-in has lapsed. Open [Oasis's sign-in]({url}) on a computer with Chrome's DevTools open (Network tab, **Preserve log**), sign in with Google, and paste the `com.mixtiles.oasis://success?code=` address it stops at.",
+        "data": {
+          "sign_in": "Sign-in address, code or refresh token"
+        }
+      }
+    },
+    "error": {
+      "not_sign_in": "That isn't a sign-in address, code or refresh token.",
+      "code_expired": "That sign-in didn't go through (codes work once, for a few minutes). Sign in again.",
+      "invalid_token": "Oasis refused that refresh token.",
+      "cannot_connect": "Can't reach Oasis."
+    },
+    "abort": {
+      "already_configured": "This Oasis account is already set up.",
+      "reauth_successful": "Signed in to Oasis again.",
+      "wrong_account": "That's a different Oasis account from the one set up."
+    }
+  }
+}
