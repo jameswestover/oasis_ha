@@ -38,9 +38,18 @@ def test_parse_sign_in():
         parse_sign_in("hello there")
 
 
-async def test_sign_in_with_the_address(hass: HomeAssistant, oasis):
+async def start(hass, method):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    assert result["type"] is FlowResultType.MENU and result["menu_options"] == ["email", "google", "apple"]
+    return await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": method})
+
+
+@pytest.mark.parametrize("method", ["google", "apple"])
+async def test_sign_in_with_the_address(hass: HomeAssistant, oasis, method):
+    result = await start(hass, method)
     assert result["type"] is FlowResultType.FORM
+    provider = {"google": "Google", "apple": "SignInWithApple"}[method]
+    assert f"identity_provider={provider}" in result["description_placeholders"]["url"]
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"sign_in": f"com.mixtiles.oasis://success?code={CODE}"}
     )
@@ -51,7 +60,7 @@ async def test_sign_in_with_the_address(hass: HomeAssistant, oasis):
 
 
 async def test_sign_in_with_a_kept_token_and_used_code(hass: HomeAssistant, oasis):
-    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await start(hass, "google")
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"sign_in": "bad-" + "y" * 300})
     assert result["errors"] == {"sign_in": "invalid_token"}
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"sign_in": "99999999-0000"})
@@ -113,7 +122,53 @@ async def test_expired_sign_in_asks_again(hass: HomeAssistant, oasis):
     assert entry.state is config_entries.ConfigEntryState.SETUP_ERROR
     flows = hass.config_entries.flow.async_progress()
     assert [f["context"]["source"] for f in flows] == ["reauth"]
+    result = await hass.config_entries.flow.async_configure(flows[0]["flow_id"], {"next_step_id": "google"})
     result = await hass.config_entries.flow.async_configure(flows[0]["flow_id"], {"sign_in": CODE})
     assert result["type"] is FlowResultType.ABORT and result["reason"] == "reauth_successful"
     assert entry.data[CONF_REFRESH_TOKEN] == TOKEN
 
+
+
+async def test_sign_in_with_email(hass: HomeAssistant, oasis, aioclient_mock):
+    result = await start(hass, "email")
+    assert result["step_id"] == "email"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"email": "someone@example.com", "password": "nope"}
+    )
+    assert result["errors"] == {"base": "wrong_password"}
+    assert result["description_placeholders"]["reason"] == "Incorrect username or password."
+    # The page's cookies go back with the form and with the page showing the error.
+    posts = [c for c in aioclient_mock.mock_calls if c[0].lower() == "post" and "/login" in str(c[1])]
+    assert "XSRF-TOKEN=csrf-1" in posts[-1][3]["Cookie"]
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"email": "someone@example.com", "password": "right-password"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_REFRESH_TOKEN: TOKEN, "email": "someone@example.com", "password": "right-password"}
+
+
+async def test_email_account_signs_itself_in_again(hass: HomeAssistant, oasis):
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="user-1", data={
+        CONF_REFRESH_TOKEN: "expired-" + "z" * 300, "email": "someone@example.com", "password": "right-password"})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is config_entries.ConfigEntryState.LOADED
+    assert entry.data[CONF_REFRESH_TOKEN] == TOKEN
+    assert not hass.config_entries.flow.async_progress()
+
+
+async def test_email_account_with_a_changed_password_asks(hass: HomeAssistant, oasis):
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="user-1", data={
+        CONF_REFRESH_TOKEN: "expired-" + "z" * 300, "email": "someone@example.com", "password": "old-password"})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is config_entries.ConfigEntryState.SETUP_ERROR
+    flow = hass.config_entries.flow.async_progress()[0]
+    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"next_step_id": "email"})
+    assert result["data_schema"]({"password": "x"})["email"] == "someone@example.com"  # filled in
+    result = await hass.config_entries.flow.async_configure(
+        flow["flow_id"], {"email": "someone@example.com", "password": "right-password"})
+    assert result["type"] is FlowResultType.ABORT and result["reason"] == "reauth_successful"
+    assert entry.data["password"] == "right-password"

@@ -3,20 +3,47 @@
     "step": {
       "user": {
         "title": "Sign in to Oasis",
-        "description": "This works with an Oasis account you sign in to with Google (other Oasis sign-ins aren't supported yet). Google sends the sign-in back to the Oasis app, so it takes one extra step.\n\n1. On a computer, open Chrome, open DevTools (View › Developer › Developer Tools), Network tab, tick **Preserve log**.\n2. In that tab, open [Oasis's sign-in]({url}) and sign in with Google.\n3. The page stops without going anywhere. In the Network list, filter for `code=`; copy the address that starts with `com.mixtiles.oasis://success?code=` (or the request's **Location** header).\n4. Paste it here within a few minutes.\n\nYou can also paste a refresh token kept from an earlier sign-in.",
-        "data": {
-          "sign_in": "Sign-in address, code or refresh token"
+        "description": "How do you sign in to the Oasis app?",
+        "menu_options": {
+          "email": "Email and password",
+          "google": "Google",
+          "apple": "Apple"
         }
       },
       "reauth_confirm": {
         "title": "Sign in to Oasis again",
-        "description": "Oasis's sign-in has lapsed. Open [Oasis's sign-in]({url}) on a computer with Chrome's DevTools open (Network tab, **Preserve log**), sign in with Google, and paste the `com.mixtiles.oasis://success?code=` address it stops at.",
+        "description": "Oasis's sign-in has lapsed. How do you sign in to the Oasis app?",
+        "menu_options": {
+          "email": "Email and password",
+          "google": "Google",
+          "apple": "Apple"
+        }
+      },
+      "email": {
+        "title": "Sign in with email",
+        "description": "The email and password you use in the Oasis app. They're kept in Home Assistant so it can sign in again by itself when Oasis asks.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "google": {
+        "title": "Sign in with Google",
+        "description": "Google sends the sign-in back to the Oasis app, so it takes one extra step.\n\n1. On a computer, open Chrome, open DevTools (View › Developer › Developer Tools), Network tab, tick **Preserve log**.\n2. In that tab, open [Oasis's Google sign-in]({url}) and sign in.\n3. The page stops without going anywhere. In the Network list, filter for `code=` and copy the address that starts with `com.mixtiles.oasis://success?code=` (or the request's **Location** header).\n4. Paste it here within a few minutes.\n\nYou can also paste a refresh token kept from an earlier sign-in.",
+        "data": {
+          "sign_in": "Sign-in address, code or refresh token"
+        }
+      },
+      "apple": {
+        "title": "Sign in with Apple",
+        "description": "Apple sends the sign-in back to the Oasis app, so it takes one extra step.\n\n1. On a computer, open Chrome, open DevTools (View › Developer › Developer Tools), Network tab, tick **Preserve log**.\n2. In that tab, open [Oasis's Apple sign-in]({url}) and sign in.\n3. The page stops without going anywhere. In the Network list, filter for `code=` and copy the address that starts with `com.mixtiles.oasis://success?code=` (or the request's **Location** header).\n4. Paste it here within a few minutes.\n\nYou can also paste a refresh token kept from an earlier sign-in.",
         "data": {
           "sign_in": "Sign-in address, code or refresh token"
         }
       }
     },
     "error": {
+      "wrong_password": "Oasis didn't take that: {reason}",
       "not_sign_in": "That isn't a sign-in address, code or refresh token.",
       "code_expired": "That sign-in didn't go through (codes work once, for a few minutes). Sign in again.",
       "invalid_token": "Oasis refused that refresh token.",

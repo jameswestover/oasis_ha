@@ -7,13 +7,25 @@ DOMAIN = "oasis"
 API = "https://0sb7eb48mj.execute-api.us-east-1.amazonaws.com/dev/v1"
 LOGIN = "https://applogin.heyoasis.com/oauth2/token"
 CLIENT_ID = "20hc2tbnm5cqipo83tq7fr6lt1"
-# Oasis's Google sign-in only returns to the Oasis app's own scheme.
+# Oasis's hosted sign-in. It only returns to the Oasis app's own scheme.
+SIGN_IN = "https://applogin.heyoasis.com"
 REDIRECT = "com.mixtiles.oasis://success"
-AUTHORIZE = "https://applogin.heyoasis.com/oauth2/authorize?" + urlencode(
-    {"response_type": "CODE", "client_id": CLIENT_ID, "redirect_uri": REDIRECT, "identity_provider": "Google"}
-)
+LOGIN_QUERY = urlencode({"response_type": "code", "client_id": CLIENT_ID, "redirect_uri": REDIRECT})
+LOGIN_PAGE = f"{SIGN_IN}/login?{LOGIN_QUERY}"
+# The sign-in buttons the Oasis app offers, besides email and password.
+PROVIDERS = {"google": "Google", "apple": "SignInWithApple"}
+
+
+def authorize(provider: str) -> str:
+    """The sign-in page for one of PROVIDERS."""
+    return f"{SIGN_IN}/oauth2/authorize?" + urlencode(
+        {"response_type": "CODE", "client_id": CLIENT_ID, "redirect_uri": REDIRECT, "identity_provider": PROVIDERS[provider]}
+    )
+
 
 CONF_REFRESH_TOKEN = "refresh_token"
+CONF_EMAIL = "email"
+CONF_PASSWORD = "password"
 
 # The Oasis app's presets, coolest first. Even "Pure Red" is a white temperature (CCT).
 TONES = {

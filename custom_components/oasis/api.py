@@ -1,12 +1,13 @@
 """Oasis's cloud: stock ESP RainMaker behind Oasis's own Cognito sign-in.
 
 The lights have no LAN API (the Oasis app uses Bluetooth mesh nearby and this
-cloud otherwise). A refresh token from a one-time Google sign-in buys access
-tokens that last a day."""
+cloud otherwise). A refresh token from a sign-in (Google, Apple, or email and
+password) buys access tokens that last a day."""
 
 from __future__ import annotations
 
 import base64
+import html
 import json
 import re
 import time
@@ -15,7 +16,7 @@ from typing import Any
 
 import aiohttp
 
-from .const import API, CLIENT_ID, LOGIN, REDIRECT
+from .const import API, CLIENT_ID, LOGIN, LOGIN_PAGE, REDIRECT, SIGN_IN
 
 
 class OasisError(Exception):
@@ -100,13 +101,58 @@ class OasisApi:
 
     @classmethod
     async def exchange_code(cls, session: aiohttp.ClientSession, code: str) -> dict[str, Any]:
-        """A finished Google sign-in's code (good for a few minutes) -> tokens."""
+        """A finished sign-in's code (good for a few minutes, once) -> tokens."""
         tokens = await cls._login(
             session, {"grant_type": "authorization_code", "code": code, "redirect_uri": REDIRECT}
         )
         if not tokens.get("refresh_token"):
             raise OasisAuthError("Oasis didn't hand over a sign-in to keep")
         return tokens
+
+    @classmethod
+    async def password_sign_in(cls, session: aiohttp.ClientSession, email: str, password: str) -> dict[str, Any]:
+        """Email and password -> tokens, through Oasis's own sign-in page (its app client
+        doesn't allow Cognito's plain password sign-in). A right password redirects to the
+        Oasis app's address with a code; a wrong one back to the page, with the reason on it."""
+        timeout = aiohttp.ClientTimeout(total=15)
+        jar: dict[str, str] = {}
+
+        def keep(resp: aiohttp.ClientResponse) -> None:
+            jar.update({k: v.value for k, v in resp.cookies.items()})
+
+        def cookies() -> dict[str, str]:
+            return {"Cookie": "; ".join(f"{k}={v}" for k, v in jar.items())}
+
+        try:
+            async with session.get(LOGIN_PAGE, allow_redirects=False, timeout=timeout) as resp:
+                keep(resp)
+                page = await resp.text()
+            csrf = re.search(r'name="_csrf" value="([^"]+)"', page)
+            if not csrf:
+                raise OasisError("Oasis's sign-in page has changed")
+            form = {"_csrf": csrf.group(1), "username": email, "password": password,
+                    "cognitoAsfData": "", "signInSubmitButton": "Sign in"}
+            async with session.post(LOGIN_PAGE, data=form, headers=cookies(), allow_redirects=False,
+                                    timeout=timeout) as resp:
+                keep(resp)
+                where = resp.headers.get("Location", "")
+            if where.startswith(REDIRECT):
+                kind, code = parse_sign_in(where)
+                return await cls.exchange_code(session, code)
+            if not where.startswith(f"{SIGN_IN}/login"):
+                raise OasisAuthError("Oasis asked for more than a password")
+            async with session.get(where, headers=cookies(), allow_redirects=False, timeout=timeout) as resp:
+                page = await resp.text()
+        except (aiohttp.ClientError, TimeoutError) as e:
+            raise OasisError("can't reach the Oasis sign-in") from e
+        reason = re.search(r'id="loginErrorMessage"[^>]*>([^<]+)<', page)
+        reason = html.unescape(reason.group(1)).strip() if reason else "Oasis refused that sign-in"
+        if "UserNotFoundException" in reason:  # "UserMigration failed with error UserNotFoundException: ..."
+            reason = "No Oasis account has that email."
+        raise OasisAuthError(reason)
+
+    def forget_access(self) -> None:
+        self._access, self._expires = "", 0.0
 
     async def access(self) -> str:
         if self._expires > time.time() + 300:

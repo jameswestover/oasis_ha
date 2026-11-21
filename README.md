@@ -25,22 +25,26 @@ Then Settings › Devices & services › Add integration › **Oasis lights**.
 
 ## Signing in
 
-The Oasis app offers more than one way to sign in. **Only Google sign-in works
-here so far.** If your Oasis account uses another way, this integration can't
-sign in to it yet (contributions welcome).
+Pick the way you sign in to the Oasis app: **email and password**, **Google**
+or **Apple**.
 
-Oasis's Google sign-in returns to the Oasis app's own address
-(`com.mixtiles.oasis://success?code=…`), which a browser can't open. So:
+**Email and password** is the easy one: type them in and you're done. They're
+kept in Home Assistant, so when Oasis's sign-in lapses the integration signs in
+again by itself. It only asks you if the password stops working.
+
+**Google and Apple** take an extra step, because their sign-in returns to the
+Oasis app's own address (`com.mixtiles.oasis://success?code=…`), which a browser
+can't open:
 
 1. On a computer, in Chrome, open DevTools (Network tab) and tick **Preserve log**.
-2. In that tab, open the sign-in link the setup form shows and sign in with Google.
+2. In that tab, open the sign-in link the setup form shows and sign in.
 3. The page stops. Filter the Network list for `code=` and copy the
    `com.mixtiles.oasis://success?code=…` address (or the request's Location header).
 4. Paste it into the form within a few minutes (a code works once).
 
-The form also takes a refresh token from an earlier sign-in. When the sign-in
-lapses, Home Assistant asks for it again (Settings › Repairs / the integration's
-card), with the same form.
+Those forms also take a refresh token from an earlier sign-in. When a Google or
+Apple sign-in lapses, Home Assistant asks for it again (the integration's card,
+or Settings › Repairs), with the same forms.
 
 ## Development
 

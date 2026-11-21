@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from custom_components.oasis.const import API, LOGIN
+from custom_components.oasis.const import API, LOGIN, LOGIN_PAGE, REDIRECT, SIGN_IN
 
 
 @pytest.fixture(autouse=True)
@@ -31,12 +31,35 @@ class FakeOasis:
         self.rooms = [{"group_id": "g1", "group_name": "Living Room", "type": "room", "nodes": ["n1", "n2"]}]
         self.sent = []
         self.room_calls = 0
+        self.accounts = {"someone@example.com": "right-password"}
+        self.login_error = ""
 
     def install(self, aioclient_mock):
         aioclient_mock.post(LOGIN, side_effect=self.login)
         aioclient_mock.get(re.compile(re.escape(API) + r"/user/nodes\?.*"), side_effect=self.get_nodes)
         aioclient_mock.get(re.compile(re.escape(API) + r"/user/node_group.*"), side_effect=self.get_groups)
         aioclient_mock.put(f"{API}/user/nodes/params", side_effect=self.put_params)
+        aioclient_mock.get(re.compile(re.escape(SIGN_IN) + r"/login\?"), side_effect=self.login_page)
+        aioclient_mock.post(re.compile(re.escape(SIGN_IN) + r"/login\?"), side_effect=self.login_form)
+
+    async def login_page(self, method, url, data):
+        from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
+
+        error = f'<p style="white-space: pre-line" id="loginErrorMessage" class="errorMessage-customizable">{self.login_error}</p>'
+        page = f'<form><input type="hidden" name="_csrf" value="csrf-1"/>{error if self.login_error else ""}</form>'
+        return AiohttpClientMockResponse(method, url, text=page, cookies={"XSRF-TOKEN": "csrf-1"})
+
+    async def login_form(self, method, url, data):
+        from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
+
+        assert data["_csrf"] == "csrf-1"
+        if self.accounts.get(data["username"]) == data["password"]:
+            code = "22222222-3333-4444-5555-666666666666"
+            self.codes.add(code)
+            return AiohttpClientMockResponse(method, url, status=302, headers={"Location": f"{REDIRECT}?code={code}"})
+        self.login_error = "Incorrect username or password."
+        return AiohttpClientMockResponse(method, url, status=302, headers={"Location": LOGIN_PAGE},
+                                         cookies={"cognito-fl": "flash"})
 
     async def login(self, method, url, data):
         from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
