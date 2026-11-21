@@ -1,0 +1,28 @@
+name: Release
+
+# The Marketplace offers updates from GitHub releases. When manifest.json's
+# version is one that has no release yet, tag it and publish one.
+on:
+  push:
+    branches: [main]
+    paths: [custom_components/oasis/manifest.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish a release for a new version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version custom_components/oasis/manifest.json)
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "v$version is already released"
+            exit 0
+          fi
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --generate-notes
