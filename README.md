@@ -28,6 +28,10 @@ Then Settings › Devices & services › Add integration › **Oasis lights**.
 Pick the way you sign in to the Oasis app: **email and password**, **Google**
 or **Apple**.
 
+> **Not tested yet:** email and password, and Apple, haven't been tried with a
+> real Oasis account. Only Google has. If one doesn't work for you, please open
+> an issue.
+
 **Email and password** is the easy one: type them in and you're done. They're
 kept in Home Assistant, so when Oasis's sign-in lapses the integration signs in
 again by itself. It only asks you if the password stops working.
